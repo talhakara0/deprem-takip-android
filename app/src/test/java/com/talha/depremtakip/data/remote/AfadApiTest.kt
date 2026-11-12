@@ -114,4 +114,25 @@ class AfadApiTest {
 
         assertTrue(response.isEmpty())
     }
+
+    @Test
+    fun `parses real AFAD payload where numbers are sent as strings`() {
+        // Captured from the live endpoint on 2026-11-12: AFAD quotes every numeric field.
+        val body = """
+            [{"rms":"0.18","eventID":"734011","location":"Niksar (Tokat)","latitude":"40.59767",
+              "longitude":"36.93417","depth":"6.67","type":"ML","magnitude":"2.7","country":"Türkiye",
+              "province":"Tokat","district":"Niksar","neighborhood":"Fatih","date":"2026-11-11T23:31:55",
+              "isEventUpdate":false,"lastUpdateDate":null}]
+        """.trimIndent()
+        server.enqueue(MockResponse().setBody(body).setHeader("Content-Type", "application/json"))
+
+        val result = kotlinx.coroutines.runBlocking { createApi().getEvents(start = "s", end = "e") }
+
+        val quake = result.single().toDomain()
+        assertEquals("734011", quake.id)
+        assertEquals(2.7, quake.magnitude!!, 0.0001)
+        assertEquals(40.59767, quake.latitude!!, 0.00001)
+        assertEquals(6.67, quake.depth!!, 0.0001)
+        assertEquals("Tokat", quake.province)
+    }
 }

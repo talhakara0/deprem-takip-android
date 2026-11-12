@@ -7,7 +7,7 @@ Room, Retrofit, Coroutines/Flow, DataStore and WorkManager.
 
 > **Türkçe özet:** AFAD açık deprem verisini gösteren, çevrimdışı çalışan, seçilen ilde eşik
 > üzeri yeni depremler için WorkManager ile bildirim gönderen modern Android uygulaması.
-> Compose + MVVM + Clean Architecture, Hilt, Room, Retrofit, DataStore, Coroutines/Flow ve 54
+> Compose + MVVM + Clean Architecture, Hilt, Room, Retrofit, DataStore, Coroutines/Flow ve 55
 > JVM birim testi içerir. Bu depoda ekran görüntüsü yoktur; uygulama emülatör olmadan
 > `./gradlew testDebugUnitTest assembleDebug` ile doğrulanır.
 
@@ -89,7 +89,7 @@ compileSdk/targetSdk 35, minSdk 26.
 # local.properties must contain:
 # sdk.dir=/opt/homebrew/share/android-commandlinetools
 
-./gradlew testDebugUnitTest   # 54 JVM unit tests
+./gradlew testDebugUnitTest   # 55 JVM unit tests
 ./gradlew assembleDebug       # debug APK
 ./gradlew lintDebug           # lint (warnings allowed, build passes)
 ```
@@ -99,7 +99,7 @@ APK output: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Tests
 
-There are **54 unit tests** (all JVM, no emulator, no real network):
+There are **55 unit tests** (all JVM, no emulator, no real network):
 
 - DTO → domain mapping, missing fields, fallback IDs, date parsing
 - Retrofit parsing against MockWebServer (unknown fields, missing values, query parameters)
@@ -114,7 +114,10 @@ There are **54 unit tests** (all JVM, no emulator, no real network):
 ## Data source and attribution
 
 Earthquake data: **AFAD Açık Kaynak Deprem Verisi**
-(`https://deprem.afad.gov.tr/apiv2/event/filter`). No API key is required. The app is not
+(`https://deprem.afad.gov.tr/apiv2/event/filter`, which currently redirects to
+`servisnet.afad.gov.tr/apigateway/deprem/...`; OkHttp follows it). No API key is required.
+AFAD sends numeric fields as quoted strings (`"magnitude":"2.7"`); the lenient JSON
+config handles this and `AfadApiTest` pins it with a captured real payload. The app is not
 affiliated with AFAD; data is used for demonstration purposes only and may be delayed or
 incomplete. Please cite AFAD when reusing the data.
 
