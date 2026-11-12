@@ -10,6 +10,7 @@ import com.talha.depremtakip.domain.model.Earthquake
 import com.talha.depremtakip.domain.model.TimeRange
 import com.talha.depremtakip.domain.repository.EarthquakeRepository
 import com.talha.depremtakip.domain.time.Clock
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -39,20 +40,28 @@ class EarthquakeRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refresh(range: TimeRange): Result<Int> = withContext(ioDispatcher) {
-        runCatching {
-            val now = clock.now()
-            val start = now.minus(range.duration)
-            val response = api.getEvents(
-                start = AFAD_FORMATTER.format(start),
-                end = AFAD_FORMATTER.format(now)
-            )
-            val entities = response.map { it.toDomain().toEntity() }
-            if (entities.isNotEmpty()) {
-                dao.upsertAll(entities)
-            }
-            dao.deleteOlderThan(now.minus(Duration.ofDays(8)).toEpochMilli())
-            entities.size
+        try {
+            Result.success(fetchAndStore(range))
+        } catch (e: CancellationException) {
+            throw e // never swallow coroutine cancellation
+        } catch (e: Exception) {
+            Result.failure(e)
         }
+    }
+
+    private suspend fun fetchAndStore(range: TimeRange): Int {
+        val now = clock.now()
+        val start = now.minus(range.duration)
+        val response = api.getEvents(
+            start = AFAD_FORMATTER.format(start),
+            end = AFAD_FORMATTER.format(now)
+        )
+        val entities = response.map { it.toDomain().toEntity() }
+        if (entities.isNotEmpty()) {
+            dao.upsertAll(entities)
+        }
+        dao.deleteOlderThan(now.minus(Duration.ofDays(8)).toEpochMilli())
+        return entities.size
     }
 
     private companion object {
